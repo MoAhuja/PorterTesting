@@ -1,0 +1,12 @@
+services:
+  dev:
+    build:
+      context: .
+    stdin_open: true
+    tty: true
+    volumes:
+      - ..:/workspace
+volumes:
+  porter:
+    name: "unified_deployment_porter"
+

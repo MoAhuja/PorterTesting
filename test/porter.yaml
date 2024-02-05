@@ -1,0 +1,166 @@
+# This is the configuration for Porter
+# You must define steps for each action, but the rest is optional
+# See https://getporter.org/bundle/manifest/file-format/ for a description of all the allowed fields in this document.
+# See https://getporter.org/author-bundles for documentation on how to configure your bundle.
+# Uncomment out the sections below to take full advantage of what Porter can do!
+
+# Optional indicator of the resource type of this file
+schemaType: Bundle
+
+# Version of the porter.yaml schema used by this file.
+schemaVersion: 1.0.1
+
+# Name of the bundle
+name: porter-hello
+
+# Version of the bundle. Change this each time you modify a published bundle.
+version: 0.4.0
+
+# Description of the bundle and what it does.
+description: "An example Porter configuration"
+
+
+# Registry where the bundle is published to by default
+registry: "moporterregistry.azurecr.io"
+
+# If you want to customize the Dockerfile in use, uncomment the line below and update the referenced file. 
+# See https://getporter.org/bundle/custom-dockerfile/
+#dockerfile: template.Dockerfile
+
+parameters:
+  - name: tfvars
+    type: file
+    # This designates the path within the installer to place the parameter value
+    path: /cnab/app/terraform/terraform.tfvars.json
+    # Here we tell Porter that the value for this parameter should come from the 'tfvars' output
+    source:
+      output: tfvars
+
+  - name: stringWithBasicProperties
+    type: string
+    description: stringWithBasicProperties_description
+    default: dummyRG
+    applyTo:
+      - install
+
+  - name: stringWithLengthRestrictions
+    type: string
+    default: dummyRG
+    applyTo:
+      - install
+    minLength: 3
+    maxLength: 10
+
+  - name: stringWithAllowedValues
+    type: string
+    enum:
+    - optionA
+    - optionB
+    - optionC
+    - optionD
+    default: optionA
+    $comment: Azure
+
+  - name: dummyJsonConfigWithDefaultValues
+    type: object
+    path: /cnab/app/config.json
+    default:
+      logLevel: 11
+      debug: true
+
+  - name: integerParameterWithMinMax
+    type: integer
+    minimum: 1
+    maximum: 11
+    applyTo: ["upgrade"]
+
+  - name: integerParameterWithExclusiveRange
+    type: integer
+    exclusiveMinimum: 0
+    exclusiveMaximum: 21
+  
+  - name: booleanParameterWithDefault
+    type: boolean
+    default: false
+  
+  - name: arrayOfStrings
+    type: array
+    minItems: 2
+    items: true
+    
+
+
+outputs:
+  - name: tfvars
+    type: file
+    # This designates the path within the installer to read the output from
+    path: /cnab/app/terraform/terraform.tfvars.json
+
+
+
+
+# Declare and optionally configure the mixins used by the bundle
+mixins:
+  - exec
+
+credentials:
+  - name: passwordNeededFromUser
+    env: passwordStoredInEnvVar
+    required: true
+  - name: passwordOperationFromUser
+    env: someEnvVar
+    required: false
+  - name: passwordWithRequiredNotSpecific
+    path: /myPath
+    env: ABC_DEF
+
+# Define the steps that should execute when the bundle is installed
+install:
+  - exec:
+      description: "Install Hello World"
+      command: ./helpers.sh
+      arguments:
+        - install
+        - ${bundle.credentials.password}
+
+# Define the steps that should execute when the bundle is upgraded
+upgrade:
+  - exec:
+      description: "World 2.0"
+      command: ./helpers.sh
+      arguments:
+        - upgrade
+
+# Define the steps that should execute when the bundle is uninstalled
+uninstall:
+  - exec:
+      description: "Uninstall Hello World"
+      command: ./helpers.sh
+      arguments:
+        - uninstall
+
+# Below is an example of how to define credentials
+# See https://getporter.org/author-bundles/#credentials
+#credentials:
+#  - name: kubeconfig
+#    path: /home/nonroot/.kube/config
+#  - name: username
+#    env: USERNAME
+
+# Below is an example of how to define parameters
+# See https://getporter.org/author-bundles/#parameters
+#parameters:
+#  - name: mysql_user
+#    type: string
+#    default: wordpress
+
+# Below is an example of how to define state variables
+# for the terraform mixin. This allows you to track
+# terraform state using the bundle instead of configuring
+# a remote backend.
+# See https://getporter.org/author-bundles/#state
+#state:
+#  - name: tfstate
+#    path: terraform/terraform.tfstate
+#  - name: tfvars
+#    path: terraform/terraform.tfvars.json
